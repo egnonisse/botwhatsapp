@@ -55,7 +55,7 @@ whatsapp:
   phone_number_id: "123456789012345"
   business_account_id: "987654321098765"
   access_token: "EAAx..."
-  verify_token: "hermes_bot_verify_token_2024"  # à personnaliser
+  verify_token: "bot_verify_token_2024"  # à personnaliser
 ```
 
 ### 4. Configurer le webhook
@@ -113,15 +113,6 @@ Le dashboard est accessible sur `http://localhost:8000`
 - Approuver / Modifier / Rejeter les suggestions IA
 - Envoyer des messages manuels
 - Stats en direct
-
-## Intégration Hermes
-
-Le bot essaie d'abord l'API Hermes locale (`http://localhost:8001/v1/chat/completions`), puis fallback sur DeepSeek direct si configuré.
-
-Pour utiliser DeepSeek en fallback, ajoute dans `config.yaml` :
-```yaml
-deepseek_api_key: "sk-..."
-```
 
 ## Limitations API WhatsApp Cloud
 
