@@ -1,0 +1,40 @@
+# ── SECRETS : ne JAMAIS pousser ─────────────────────────────────────
+# config.yaml contient les clés API réelles (Meta access_token,
+# verify_token, DeepSeek, WooCommerce consumer_key/secret).
+# Utiliser config.example.yaml pour le repo.
+config.yaml
+*.env
+.env*
+
+# ── Données runtime ─────────────────────────────────────────────────
+data/
+logs/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ── Python ──────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── IDE / OS ────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# ── Hermes / divers ─────────────────────────────────────────────────
+.hermes/
+hermes-verify-*.py
+*.tmp
+*.bak

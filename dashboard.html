@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BotWhatsApp — Dashboard</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:#f0f2f5; color:#1a1a1a; height:100vh; display:flex; flex-direction:column; }
+
+        .header { background:linear-gradient(135deg,#075e54,#128c7e); color:#fff; padding:12px 24px; display:flex; justify-content:space-between; align-items:center; }
+        .header h1 { font-size:1.4em; cursor:pointer; }
+        .stats { display:flex; gap:24px; font-size:0.85em; }
+        .stats span { opacity:0.9; }
+        .stats strong { font-size:1.2em; }
+
+        .main { display:flex; flex:1; overflow:hidden; }
+        .sidebar { width:340px; background:#fff; border-right:1px solid #e0e0e0; display:flex; flex-direction:column; }
+        .sidebar-header { padding:10px 14px; border-bottom:1px solid #e0e0e0; display:flex; flex-direction:column; gap:8px; }
+        .search-box { width:100%; padding:8px 12px; border:1px solid #ddd; border-radius:16px; font-size:0.85em; outline:none; }
+        .search-box:focus { border-color:#128c7e; }
+        .tabs { display:flex; gap:6px; }
+        .tabs button { flex:1; padding:5px 8px; border:1px solid #ddd; border-radius:14px; background:#fff; cursor:pointer; font-size:0.75em; transition:all 0.2s; }
+        .tabs button.active { background:#e8f5e9; border-color:#128c7e; color:#128c7e; font-weight:600; }
+        .tabs button.orders-tab { background:#fff3e0; border-color:#e65100; color:#e65100; font-weight:600; }
+
+        .conv-list { flex:1; overflow-y:auto; }
+        .conv-item { padding:10px 14px; border-bottom:1px solid #f0f0f0; cursor:pointer; transition:background 0.15s; }
+        .conv-item:hover { background:#f5f5f5; }
+        .conv-item.active { background:#e8f5e9; border-left:3px solid #128c7e; }
+        .conv-item .name { font-weight:600; font-size:0.9em; }
+        .conv-item .preview { font-size:0.78em; color:#667; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .conv-item .meta { display:flex; justify-content:space-between; align-items:center; margin-top:3px; }
+        .conv-item .stage { font-size:0.65em; background:#e3f2fd; color:#1565c0; padding:2px 6px; border-radius:8px; }
+        .conv-item .stage.closing { background:#fff3e0; color:#e65100; }
+        .conv-item .stage.closed_won { background:#e8f5e9; color:#2e7d32; }
+        .badge { width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:3px; }
+        .badge.pending { background:#f44336; animation:pulse 1s infinite; }
+        .badge.human { background:#ff9800; }
+        .badge.active { background:#4caf50; }
+
+        /* Order cards */
+        .order-card { padding:10px 14px; border-bottom:1px solid #f0f0f0; cursor:pointer; }
+        .order-card:hover { background:#f5f5f5; }
+        .order-card .oid { font-weight:600; font-size:0.9em; color:#e65100; }
+        .order-card .detail { font-size:0.78em; color:#667; }
+
+        /* Chat */
+        .chat-area { flex:1; display:flex; flex-direction:column; background:#e5ddd5; min-height:0; }
+        .chat-empty { flex:1; display:flex; align-items:center; justify-content:center; color:#999; font-size:1em; }
+        #chat-detail { flex:1; display:flex; flex-direction:column; min-height:0; }
+        .chat-header { padding:10px 18px; background:#fff; border-bottom:1px solid #e0e0e0; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+        .chat-header .contact-name { font-weight:600; }
+        .stage-badge { font-size:0.7em; padding:2px 8px; border-radius:10px; background:#e3f2fd; color:#1565c0; }
+        .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px; min-height:0; }
+        .msg { max-width:70%; padding:8px 12px; border-radius:8px; font-size:0.85em; line-height:1.4; position:relative; }
+        .msg.incoming { align-self:flex-start; background:#fff; border-top-left-radius:0; }
+        .msg.outgoing { align-self:flex-end; background:#dcf8c6; border-top-right-radius:0; }
+        .msg.pending-review { border:2px dashed #ff9800; background:#fff8e1; }
+        .msg .time { font-size:0.6em; color:#999; margin-top:3px; text-align:right; }
+        .msg .review-badge { position:absolute; top:-7px; right:-7px; background:#ff9800; color:#fff; font-size:0.6em; padding:1px 5px; border-radius:8px; font-weight:600; }
+
+        .review-bar { padding:10px 16px; background:#fff; border-top:2px solid #ff9800; display:none; align-items:center; gap:8px; }
+        .review-bar.visible { display:flex; }
+        .review-bar .ai-response { flex:1; font-style:italic; color:#667; font-size:0.8em; padding:6px 8px; background:#fff8e1; border-radius:6px; }
+        .btn { padding:6px 14px; border:none; border-radius:6px; cursor:pointer; font-size:0.8em; font-weight:600; transition:all 0.2s; }
+        .btn-approve { background:#4caf50; color:#fff; }
+        .btn-reject { background:#f44336; color:#fff; }
+        .btn-edit { background:#2196f3; color:#fff; }
+
+        .compose-bar { padding:10px 16px; background:#fff; border-top:1px solid #e0e0e0; display:flex; gap:8px; }
+        .compose-bar input { flex:1; padding:8px 12px; border:1px solid #ddd; border-radius:18px; font-size:0.85em; outline:none; }
+        .compose-bar input:focus { border-color:#128c7e; }
+        .compose-bar .btn-send { background:#128c7e; color:#fff; border-radius:18px; padding:8px 18px; }
+
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center; }
+        .modal.visible { display:flex; }
+        .modal-content { background:#fff; border-radius:12px; padding:20px; width:480px; max-width:90%; }
+        .modal-content h3 { margin-bottom:10px; }
+        .modal-content textarea { width:100%; height:100px; padding:8px; border:1px solid #ddd; border-radius:8px; font-size:0.85em; resize:vertical; font-family:inherit; }
+        .modal-actions { display:flex; gap:8px; margin-top:10px; justify-content:flex-end; }
+
+        /* Notification toast */
+        .toast { position:fixed; top:70px; right:20px; background:#128c7e; color:#fff; padding:10px 20px; border-radius:8px; font-size:0.85em; z-index:200; transform:translateX(120%); transition:transform 0.3s; box-shadow:0 2px 10px rgba(0,0,0,0.2); cursor:pointer; }
+        .toast.show { transform:translateX(0); }
+
+        /* Pulse */
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        .empty-state { padding:30px; text-align:center; color:#999; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 onclick="location.reload()">💬 BotWhatsApp</h1>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button class="btn" style="background:#5c6bc0;color:#fff;font-size:0.7em;padding:4px 10px;" onclick="openRulesModal()">⚙️ Règles</button>
+            <button class="btn" style="background:#26a69a;color:#fff;font-size:0.7em;padding:4px 10px;" onclick="openTeamModal()">👥 Équipe</button>
+            <button class="btn" style="background:#ef8c2e;color:#fff;font-size:0.7em;padding:4px 10px;" onclick="openShopModal()">🏪 Boutique</button>
+            <div class="stats" id="stats">
+            <span>Total: <strong id="stat-total">0</strong></span>
+            <span>📝 Review: <strong id="stat-pending" style="color:#ff9800">0</strong></span>
+            <span>🟢 Actif: <strong id="stat-active">0</strong></span>
+            <span>📦 Cdes: <strong id="stat-orders">0</strong></span>
+        </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <input type="text" class="search-box" id="search-input" placeholder="🔍 Rechercher par nom ou téléphone..." oninput="handleSearch(this.value)">
+                <div class="tabs" id="tabs">
+                    <button class="active" data-tab="all" onclick="switchTab('all')">Toutes</button>
+                    <button data-tab="pending" onclick="switchTab('pending')">⚠️ À valider</button>
+                    <button data-tab="active" onclick="switchTab('active')">Actives</button>
+                    <button class="orders-tab" data-tab="orders" onclick="switchTab('orders')">📦 Cdes</button>
+                </div>
+            </div>
+            <div class="conv-list" id="conv-list"></div>
+        </div>
+
+        <!-- Chat -->
+        <div class="chat-area" id="chat-area">
+            <div class="chat-empty" id="chat-empty">👈 Sélectionne une conversation</div>
+            <div id="chat-detail" style="display:none; flex-direction:column; flex:1;">
+                <div class="chat-header">
+                    <span class="contact-name" id="chat-contact"></span>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span class="stage-badge" id="chat-stage"></span>
+                        <button class="btn" style="background:#ef5350;color:#fff;font-size:0.7em;padding:3px 10px;" onclick="clearConversation()" title="Vider les messages de cette conversation">🗑️ Vider</button>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chat-messages"></div>
+                <div class="review-bar" id="review-bar">
+                    <span style="font-weight:600;">🤖 Réponse IA :</span>
+                    <span class="ai-response" id="ai-response-text"></span>
+                    <button class="btn btn-approve" onclick="approveResponse()">✅ Envoyer</button>
+                    <button class="btn btn-edit" onclick="showEditModal()">✏️</button>
+                    <button class="btn btn-reject" onclick="rejectResponse()">❌</button>
+                </div>
+                <div class="compose-bar">
+                    <input type="text" id="compose-input" placeholder="Message manuel..." onkeydown="if(event.key==='Enter')sendCustom()">
+                    <button class="btn btn-send" onclick="sendCustom()">Envoyer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit modal -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content">
+            <h3>✏️ Modifier la réponse</h3>
+            <textarea id="edit-textarea"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-reject" onclick="closeEditModal()">Annuler</button>
+                <button class="btn btn-approve" onclick="sendEdited()">Envoyer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification toast -->
+    <div class="toast" id="toast" onclick="this.classList.remove('show')"></div>
+
+    <!-- Regles modal -->
+    <div class="modal" id="rules-modal">
+        <div class="modal-content" style="width:600px;">
+            <h3>⚙️ Règles du bot (BASE_RULES)</h3>
+            <p style="font-size:0.75em;color:#667;margin-bottom:8px;">Modifie les règles injectées dans chaque prompt. Appliqué instantanément.</p>
+            <textarea id="rules-textarea" style="width:100%;height:200px;padding:8px;border:1px solid #ddd;border-radius:8px;font-size:0.8em;font-family:monospace;resize:vertical;"></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-reject" onclick="closeRulesModal()">Annuler</button>
+                <button class="btn btn-approve" onclick="saveRules()">💾 Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipe modal -->
+    <div class="modal" id="team-modal">
+        <div class="modal-content" style="width:520px;">
+            <h3>👥 Équipe (alertes d'escalade)</h3>
+            <p style="font-size:0.75em;color:#667;margin-bottom:8px;">Membres qui reçoivent une alerte WhatsApp quand le bot passe la main à un humain. Seuls les membres <b>actifs</b> sont notifiés.</p>
+            <div id="team-list" style="margin-bottom:12px;"></div>
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                <input type="text" id="team-name" placeholder="Nom (ex: LEO)" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:0.8em;">
+                <input type="text" id="team-phone" placeholder="+22548770834" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:0.8em;">
+                <button class="btn btn-approve" onclick="addTeamMember()">+ Ajouter</button>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-reject" onclick="closeTeamModal()">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boutique modal -->
+    <div class="modal" id="shop-modal">
+        <div class="modal-content" style="width:640px;">
+            <h3>🏪 Paramètres boutique</h3>
+            <p style="font-size:0.75em;color:#667;margin-bottom:10px;">Ces infos sont injectées dans les réponses du bot : il répond avec VOS vraies conditions, jamais inventées. Appliqué au prochain message.</p>
+            <div style="display:grid;gap:8px;">
+                <div>
+                    <label style="font-size:0.75em;color:#556;">Horaires</label>
+                    <input type="text" id="shop-horaires" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:0.8em;">
+                </div>
+                <div>
+                    <label style="font-size:0.75em;color:#556;">Zones de livraison</label>
+                    <input type="text" id="shop-zones" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:0.8em;">
+                </div>
+                <div>
+                    <label style="font-size:0.75em;color:#556;">Délais</label>
+                    <input type="text" id="shop-delais" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:0.8em;">
+                </div>
+                <div>
+                    <label style="font-size:0.75em;color:#556;">Frais de livraison</label>
+                    <input type="text" id="shop-frais" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:0.8em;">
+                </div>
+                <div>
+                    <label style="font-size:0.75em;color:#556;">Paiement (séparé par virgule)</label>
+                    <input type="text" id="shop-paiement" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:0.8em;">
+                </div>
+                <div>
+                    <label style="font-size:0.75em;color:#556;">Garantie</label>
+                    <input type="text" id="shop-garantie" style="width:100%;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:0.8em;">
+                </div>
+                <div>
+                    <label style="font-size:0.75em;color:#556;">FAQ (Q → R, une par ligne)</label>
+                    <textarea id="shop-faq" style="width:100%;height:100px;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:0.8em;font-family:monospace;" placeholder="Comment payer ? → Cash, Orange Money, Wave&#10;Délais ? → 24-48h Abidjan"></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-reject" onclick="closeShopModal()">Annuler</button>
+                <button class="btn btn-approve" onclick="saveShop()">💾 Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '';
+        let currentConvId = null;
+        let currentTab = 'all';
+        let searchQuery = '';
+        let prevMessageCounts = {};
+
+        function notify(text) {
+            const t = document.getElementById('toast');
+            t.textContent = text;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 5000);
+        }
+
+        async function loadStats() {
+            const r = await fetch(`${API}/api/stats`);
+            const d = await r.json();
+            document.getElementById('stat-total').textContent = d.total;
+            document.getElementById('stat-pending').textContent = d.pending_review;
+            document.getElementById('stat-active').textContent = d.active;
+            // Orders count
+            const or = await fetch(`${API}/api/orders`);
+            const orders = await or.json();
+            document.getElementById('stat-orders').textContent = orders.length;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            currentConvId = null;
+            document.getElementById('search-input').value = '';
+            searchQuery = '';
+            document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            document.getElementById('chat-empty').style.display = 'flex';
+            document.getElementById('chat-detail').style.display = 'none';
+            loadList();
+        }
+
+        function handleSearch(q) {
+            searchQuery = q.trim();
+            currentConvId = null;
+            loadList();
+        }
+
+        async function loadList() {
+            const list = document.getElementById('conv-list');
+
+            if (searchQuery) {
+                const r = await fetch(`${API}/api/conversations/search?q=${encodeURIComponent(searchQuery)}`);
+                const results = await r.json();
+                list.innerHTML = results.map(c => convItemHTML(c)).join('') || '<div class="empty-state">Aucun résultat</div>';
+                // Check for new messages
+                if (currentConvId) checkMessageDelta();
+                return;
+            }
+
+            if (currentTab === 'orders') {
+                const r = await fetch(`${API}/api/orders`);
+                const orders = await r.json();
+                list.innerHTML = orders.map(o => `
+                    <div class="order-card" onclick="selectConv(${o.conv_id})">
+                        <div class="oid">📦 #${o.order_id} — ${o.status}</div>
+                        <div class="detail">${escapeHtml(o.name)} · ${escapeHtml(o.product)}</div>
+                        <div class="detail" style="font-size:0.7em;color:#999">${o.phone}</div>
+                    </div>`).join('') || '<div class="empty-state">Aucune commande</div>';
+                return;
+            }
+
+            const status = currentTab === 'all' ? '' : currentTab;
+            const r = await fetch(`${API}/api/conversations?status=${status}`);
+            const convs = await r.json();
+            list.innerHTML = convs.map(c => convItemHTML(c)).join('') || '<div class="empty-state">Aucune conversation</div>';
+
+            // Check for new messages
+            if (currentConvId) checkMessageDelta();
+        }
+
+        function convItemHTML(c) {
+            const stageLabel = (c.sales_stage || 'qualification').replace('_',' ');
+            let badge = '';
+            if (c.needs_review) badge = '<span class="badge pending"></span>';
+            else if (c.status === 'human') badge = '<span class="badge human"></span>';
+            else if (c.status === 'active') badge = '<span class="badge active"></span>';
+            return `<div class="conv-item ${c.id===currentConvId?'active':''}" onclick="selectConv(${c.id})">
+                <div class="name">${badge} ${escapeHtml(c.wa_name||c.wa_phone)}</div>
+                <div class="preview">${escapeHtml(c.wa_phone)}</div>
+                <div class="meta">
+                    <span class="stage ${c.sales_stage||''}">${stageLabel}</span>
+                    ${c.needs_review?'<span style="color:#f44336;font-size:0.65em;">⚠️</span>':''}
+                </div>
+            </div>`;
+        }
+
+        async function selectConv(id) {
+            currentConvId = id;
+            document.getElementById('chat-empty').style.display = 'none';
+            document.getElementById('chat-detail').style.display = 'flex';
+            document.getElementById('review-bar').classList.remove('visible');
+
+            const r = await fetch(`${API}/api/conversations/${id}`);
+            const d = await r.json();
+            const conv = d.conversation;
+            const msgs = d.messages;
+
+            document.getElementById('chat-contact').textContent = conv.wa_name || conv.wa_phone;
+            document.getElementById('chat-stage').textContent = '📌 ' + (conv.sales_stage || 'qualification').replace('_',' ');
+
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = msgs.map(m => {
+                let cls = `msg ${m.direction}`;
+                if (m.direction==='outgoing' && !m.reviewed) cls += ' pending-review';
+                const rb = (m.direction==='outgoing' && !m.reviewed) ? '<span class="review-badge">⚠️</span>' : '';
+                const time = m.created_at ? m.created_at.split(' ')[1]?.substring(0,5) : '';
+                // Détecter les images
+                const imgMatch = m.content.match(/^\[IMAGE:(.*?)\|(.*?)\]$/);
+                const body = imgMatch
+                    ? `<img src="${imgMatch[1]}" alt="${escapeHtml(imgMatch[2])}" style="max-width:250px;border-radius:8px;display:block;margin:4px 0;"><span style="font-size:0.75em;color:#667;">📷 ${escapeHtml(imgMatch[2])}</span>`
+                    : escapeHtml(m.content);
+                return `<div class="${cls}">${rb}${body}<div class="time">${time}</div></div>`;
+            }).join('');
+            container.scrollTop = container.scrollHeight;
+
+            // Review bar
+            const um = msgs.find(m => m.direction==='outgoing' && !m.reviewed);
+            if (um) {
+                document.getElementById('ai-response-text').textContent = um.content;
+                document.getElementById('review-bar').classList.add('visible');
+            }
+
+            loadList();
+        }
+
+        // Check for new incoming messages and notify
+        async function checkMessageDelta() {
+            if (!currentConvId) return;
+            const r = await fetch(`${API}/api/conversations/${currentConvId}`);
+            const d = await r.json();
+            const incoming = d.messages.filter(m => m.direction === 'incoming');
+            const count = incoming.length;
+            const prev = prevMessageCounts[currentConvId] || 0;
+            if (count > prev) {
+                const name = d.conversation.wa_name || d.conversation.wa_phone;
+                notify(`📩 Nouveau message de ${name}`);
+                selectConv(currentConvId);
+            }
+            prevMessageCounts[currentConvId] = count;
+        }
+
+        // ── Actions ──────────────────────────
+
+        async function approveResponse() {
+            await fetch(`${API}/api/conversations/${currentConvId}/approve`, {method:'POST'});
+            selectConv(currentConvId); loadStats();
+        }
+        function showEditModal() {
+            document.getElementById('edit-textarea').value = document.getElementById('ai-response-text').textContent;
+            document.getElementById('edit-modal').classList.add('visible');
+        }
+        function closeEditModal() { document.getElementById('edit-modal').classList.remove('visible'); }
+        async function sendEdited() {
+            const text = document.getElementById('edit-textarea').value;
+            await fetch(`${API}/api/conversations/${currentConvId}/edit-send`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+            closeEditModal(); selectConv(currentConvId); loadStats();
+        }
+        async function rejectResponse() {
+            await fetch(`${API}/api/conversations/${currentConvId}/reject`, {method:'POST'});
+            selectConv(currentConvId); loadStats();
+        }
+        async function sendCustom() {
+            const input = document.getElementById('compose-input');
+            const text = input.value.trim(); if(!text) return;
+            await fetch(`${API}/api/conversations/${currentConvId}/send`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+            input.value = ''; selectConv(currentConvId);
+        }
+        function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
+        async function clearConversation() {
+            if (!currentConvId) return;
+            if (!confirm('Supprimer TOUS les messages et le contexte de cette conversation ? Cette action est irréversible.')) return;
+            await fetch(`${API}/api/conversations/${currentConvId}/clear`, {method:'POST'});
+            currentConvId = null;
+            document.getElementById('chat-empty').style.display = 'flex';
+            document.getElementById('chat-detail').style.display = 'none';
+            notify('🧹 Conversation vidée');
+            loadList(); loadStats();
+        }
+
+        // ── BASE_RULES ──────────────────────
+        async function openRulesModal() {
+            const r = await fetch(`${API}/api/base-rules`);
+            const d = await r.json();
+            document.getElementById('rules-textarea').value = d.rules || '';
+            document.getElementById('rules-modal').classList.add('visible');
+        }
+        function closeRulesModal() { document.getElementById('rules-modal').classList.remove('visible'); }
+        async function saveRules() {
+            const rules = document.getElementById('rules-textarea').value;
+            await fetch(`${API}/api/base-rules`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules})});
+            closeRulesModal();
+            notify('✅ Règles sauvegardées et appliquées');
+        }
+
+        // ── Boutique ────────────────────────────────────────
+        function openShopModal() {
+            document.getElementById('shop-modal').style.display = 'flex';
+            loadShop();
+        }
+        function closeShopModal() {
+            document.getElementById('shop-modal').style.display = 'none';
+        }
+        async function loadShop() {
+            try {
+                const r = await fetch(API + '/api/shop-settings');
+                const d = await r.json();
+                document.getElementById('shop-horaires').value = d.horaires || '';
+                document.getElementById('shop-zones').value = (d.livraison || {}).zones || '';
+                document.getElementById('shop-delais').value = (d.livraison || {}).delais || '';
+                document.getElementById('shop-frais').value = (d.livraison || {}).frais || '';
+                document.getElementById('shop-paiement').value = (d.paiement || []).join(', ');
+                document.getElementById('shop-garantie').value = d.garantie || '';
+                document.getElementById('shop-faq').value = (d.faq || []).map(f => f.q + ' → ' + f.a).join('\n');
+            } catch (e) { notify('Erreur chargement boutique'); }
+        }
+        async function saveShop() {
+            const faqLines = document.getElementById('shop-faq').value.split('\n')
+                .map(l => l.trim()).filter(l => l.includes('→'));
+            const faq = faqLines.map(l => {
+                const idx = l.indexOf('→');
+                return { q: l.slice(0, idx).trim(), a: l.slice(idx + 1).trim() };
+            });
+            const body = {
+                horaires: document.getElementById('shop-horaires').value.trim(),
+                livraison: {
+                    zones: document.getElementById('shop-zones').value.trim(),
+                    delais: document.getElementById('shop-delais').value.trim(),
+                    frais: document.getElementById('shop-frais').value.trim(),
+                },
+                paiement: document.getElementById('shop-paiement').value.split(',')
+                    .map(s => s.trim()).filter(Boolean),
+                garantie: document.getElementById('shop-garantie').value.trim(),
+                faq: faq,
+            };
+            const r = await fetch(API + '/api/shop-settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const d = await r.json();
+            if (d.status === 'ok') {
+                closeShopModal();
+                notify('✅ Paramètres boutique sauvegardés');
+            } else {
+                notify('Erreur sauvegarde');
+            }
+        }
+
+        // ── Équipe ──────────────────────────────────────────
+        function openTeamModal() {
+            document.getElementById('team-modal').style.display = 'flex';
+            loadTeam();
+        }
+        function closeTeamModal() {
+            document.getElementById('team-modal').style.display = 'none';
+        }
+        async function loadTeam() {
+            try {
+                const r = await fetch(API + '/api/team');
+                const d = await r.json();
+                const list = document.getElementById('team-list');
+                if (!d.team || d.team.length === 0) {
+                    list.innerHTML = '<div style="color:#667;font-size:0.8em;padding:8px;">Aucun membre. Ajoutez un numéro pour recevoir les alertes d\'escalade.</div>';
+                    return;
+                }
+                list.innerHTML = d.team.map(m => `
+                    <div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid #eee;border-radius:8px;margin-bottom:6px;${m.active ? '' : 'opacity:0.5;'}">
+                        <span style="flex:1;font-size:0.85em;">👤 ${m.name} <span style="color:#889;">${m.phone}</span></span>
+                        <button class="btn" style="font-size:0.7em;padding:2px 8px;${m.active ? 'background:#ff9800;color:#fff;' : 'background:#66bb6a;color:#fff;'}" onclick="toggleTeamMember('${m.phone}')">${m.active ? 'Désactiver' : 'Activer'}</button>
+                        <button class="btn" style="font-size:0.7em;padding:2px 8px;background:#ef5350;color:#fff;" onclick="removeTeamMember('${m.phone}')">🗑️</button>
+                    </div>`).join('');
+            } catch (e) { notify('Erreur chargement équipe'); }
+        }
+        async function addTeamMember() {
+            const name = document.getElementById('team-name').value.trim();
+            const phone = document.getElementById('team-phone').value.trim();
+            if (!name || !phone) { notify('Nom et téléphone requis'); return; }
+            const r = await fetch(API + '/api/team', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone })
+            });
+            const d = await r.json();
+            if (d.status === 'ok') {
+                document.getElementById('team-name').value = '';
+                document.getElementById('team-phone').value = '';
+                loadTeam();
+                notify('✅ Membre ajouté');
+            }
+        }
+        async function toggleTeamMember(phone) {
+            await fetch(API + '/api/team/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+            loadTeam();
+        }
+        async function removeTeamMember(phone) {
+            await fetch(API + '/api/team', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+            loadTeam();
+            notify('🗑️ Membre retiré');
+        }
+
+        // Init
+        loadStats(); loadList();
+        setInterval(() => { loadStats(); loadList(); if (currentConvId) selectConv(currentConvId); }, 5000);
+    </script>
+</body>
+</html>

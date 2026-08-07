@@ -1,0 +1,66 @@
+# ─────────────────────────────────────────────────────────────────────
+# config.example.yaml — STRUCTURE ANONYMISÉE (aucun secret)
+# Copier vers config.yaml et remplir les valeurs réelles.
+# Ne JAMAIS committer config.yaml (contient les clés API).
+# ─────────────────────────────────────────────────────────────────────
+
+whatsapp:
+  access_token: "EAAPLACEHOLDER"            # Token WhatsApp Cloud API
+  phone_number_id: "1275726482289343"       # L'ID du numéro de téléphone
+  business_account_id: "1275726482289343"   # L'ID du compte WhatsApp Business
+  api_version: "v21.0"                      # Version de l'API
+  verify_token: "PLACEHOLDER"               # Token de vérification webhook
+  catalog_id: "1731270347996653"            # ID du catalogue WhatsApp Commerce
+
+bot:
+  name: "Assistant Commercial"
+  company: "Zariamall"
+  mode: "auto"          # auto | hybrid | assist
+  auto_reply_delay: 2   # secondes avant réponse auto
+  human_escalation_keywords:
+    - "humain"
+    - "conseiller"
+    - "vrai personne"
+    - "urgent"
+
+sales:
+  stages:
+    - "qualification"
+    - "recommandation"
+    - "objection"
+    - "closing"
+  product_description: "Zariamall - Boutique de téléphones, accessoires et électronique en Côte d'Ivoire"
+  pricing: "De 5 000 FCFA (accessoires) à 720 000 FCFA (iPhone 15 256Go). Livraison Abidjan et intérieur."
+  unique_selling_points:
+    - "Livraison gratuite à Abidjan dès 50 000 FCFA"
+    - "Garantie 1 an sur tous les téléphones"
+
+hermes:
+  api_url: "http://localhost:8001"   # URL de l'API Hermes locale
+  model: "deepseek-v4-flash"         # Modèle LLM
+  max_history: 20                    # Nombre de messages de contexte
+  temperature: 0.3                   # Créativité (0=strict, 1=créatif)
+  max_tokens: 4000                   # Budget tokens (raisonnement + réponse)
+  timeout: 45                        # Timeout appel API (s)
+
+deepseek_api_key: "sk-PLACEHOLDER"
+
+woocommerce:
+  url: "https://zariamall.com/wp-json/wc/v3/"
+  consumer_key: "ck_PLACEHOLDER"
+  consumer_secret: "cs_PLACEHOLDER"
+
+tuning:
+  loop_similarity_threshold: 0.75
+  loop_escalation_threshold: 0.6
+  max_qualification_questions: 3
+  min_outgoing_for_loop: 3
+  store_domain: "zariamall.com"
+  known_brands:
+    - "samsung"
+    - "tecno"
+    - "xiaomi"
+    - "infinix"
+    - "itel"
+  truncate_min_prefix: 20
+  truncate_tail_margin: 40
