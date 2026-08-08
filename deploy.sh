@@ -106,5 +106,5 @@ echo "  ssh ${SSH_USER}@${VPS_IP} 'journalctl -u cloudflare-tunnel -n 20 --no-pa
 echo ""
 echo "Then update Meta webhook:"
 echo "  https://<tunnel-url>/webhook/whatsapp"
-echo "  Token: hermes_bot_verify_token_2024"
+echo "  Token: <verify_token défini dans config.yaml>"
 echo ""

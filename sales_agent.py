@@ -1,7 +1,7 @@
 """Agent de vente conversationnelle intelligent.
 
 Gère le pipeline de vente (qualification → closing) en utilisant
-soit l'API Hermes locale, soit une API LLM directe (OpenAI-compatible).
+soit l'API LLM locale, soit une API LLM directe (OpenAI-compatible).
 """
 
 import json
@@ -129,19 +129,19 @@ class SalesAgent:
         self.truncate_tail_margin = tuning.get("truncate_tail_margin", 40)
 
         # Config LLM
-        hermes_cfg = config.get("hermes", {})
-        self.hermes_url = hermes_cfg.get("api_url", "http://localhost:8001")
-        self.model = hermes_cfg.get("model", "deepseek-v4-pro")
-        self.max_history = hermes_cfg.get("max_history", 20)
+        llm_cfg = config.get("llm", {})
+        self.llm_url = llm_cfg.get("api_url", "http://localhost:8001")
+        self.model = llm_cfg.get("model", "deepseek-v4-pro")
+        self.max_history = llm_cfg.get("max_history", 20)
 
         # Paramètres LLM configurables (plus de valeurs codées en dur)
-        self.temperature = hermes_cfg.get("temperature", 0.3)
-        self.max_tokens = hermes_cfg.get("max_tokens", 4000)
-        self.llm_timeout = hermes_cfg.get("timeout", 10)
-        self.retry_sleep = hermes_cfg.get("retry_sleep", 1)
-        self.max_retries = hermes_cfg.get("max_retries", 2)
-        self.max_response_chars = hermes_cfg.get("max_response_chars", 150)
-        self.llm_api_url = hermes_cfg.get("api_url_llm", "https://api.deepseek.com/v1/chat/completions")
+        self.temperature = llm_cfg.get("temperature", 0.3)
+        self.max_tokens = llm_cfg.get("max_tokens", 4000)
+        self.llm_timeout = llm_cfg.get("timeout", 10)
+        self.retry_sleep = llm_cfg.get("retry_sleep", 1)
+        self.max_retries = llm_cfg.get("max_retries", 2)
+        self.max_response_chars = llm_cfg.get("max_response_chars", 150)
+        self.llm_api_url = llm_cfg.get("api_url_llm", "https://api.deepseek.com/v1/chat/completions")
 
         # Auto-review threshold: si confidence >= ce seuil, envoi auto (mode hybride)
         self.auto_confidence_threshold = 0.85
@@ -876,7 +876,7 @@ class SalesAgent:
         return False
 
     async def _call_llm(self, system_prompt: str, history: list[dict]) -> Optional[dict]:
-        """Appelle DeepSeek directement (Hermes désactivé car indisponible)."""
+        """Appelle DeepSeek directement (passerelle LLM locale désactivée)."""
         api_key = self.config.get("deepseek_api_key", "")
         if not api_key:
             logger.warning("Pas de clé API DeepSeek configurée")

@@ -1,5 +1,5 @@
 # BotWhatsApp - Vente conversationnelle intelligente via WhatsApp Cloud API
-# Stack: Python 3.11+ / FastAPI / Hermes Agent / SQLite
+# Stack: Python 3.11+ / FastAPI / LLM / SQLite
 
 fastapi>=0.110
 uvicorn[standard]>=0.27

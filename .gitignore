@@ -33,8 +33,7 @@ env/
 Thumbs.db
 .DS_Store
 
-# ── Hermes / divers ─────────────────────────────────────────────────
-.hermes/
-hermes-verify-*.py
+# ── Divers ─────────────────────────────────────────────────────────
+verify-*.py
 *.tmp
 *.bak

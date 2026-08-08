@@ -35,8 +35,8 @@ sales:
     - "Livraison gratuite à Abidjan dès 50 000 FCFA"
     - "Garantie 1 an sur tous les téléphones"
 
-hermes:
-  api_url: "http://localhost:8001"   # URL de l'API Hermes locale
+llm:
+  api_url: "http://localhost:8001"   # URL de l'API LLM locale
   model: "deepseek-v4-flash"         # Modèle LLM
   max_history: 20                    # Nombre de messages de contexte
   temperature: 0.3                   # Créativité (0=strict, 1=créatif)
