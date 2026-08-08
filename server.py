@@ -434,14 +434,29 @@ async def _send_response(wa_phone: str, wa_name: str, text: str, result: dict):
 
 @app.get("/api/conversations")
 async def get_conversations(status: Optional[str] = None):
-    """Liste toutes les conversations."""
+    """Liste toutes les conversations (avec order_id extrait du contexte)."""
     if status == "pending":
         conversations = conv_mgr.get_pending_reviews()
     elif status == "active":
         conversations = conv_mgr.get_active_conversations()
     else:
         conversations = conv_mgr.get_all_conversations()
-    return conversations
+    return [_with_order_id(c, conv_mgr) for c in conversations]
+
+
+def _with_order_id(conv: dict, mgr) -> dict:
+    """Ajoute order_id et order_status (extraits du contexte) à une conversation."""
+    out = dict(conv)
+    out["order_id"] = ""
+    out["order_status"] = ""
+    try:
+        ctx = mgr.get_context(conv["id"])
+        if ctx.get("_order_created"):
+            out["order_id"] = ctx.get("_order_created")
+            out["order_status"] = ctx.get("_order_status", "processing")
+    except Exception:
+        pass
+    return out
 
 
 @app.get("/api/conversations/search")
